@@ -5,7 +5,7 @@ import {
   Volume2, VolumeX, Trash2, Upload, Shuffle, FileText, History, Gamepad2, X,
   Moon, Sun, Cookie, Music, Music2, Plus, FolderOpen, Save, Users,
   ChevronDown, ChevronUp, ShieldCheck, RotateCcw, Undo2, Maximize2, Minimize2, Mic, MicOff,
-  GraduationCap, MapPin, School, Sparkles, Heart
+  GraduationCap, MapPin, School, Sparkles, Heart, Lock, User, LogIn, LogOut, Eye, EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playWin, setSoundEnabled, startAmbient, stopAmbient, setAmbientEnabled } from './lib/audio';
@@ -106,8 +106,23 @@ const THEMES: { id: ThemeName; label: string; icon: React.ReactNode }[] = [
 const CALLED_KEY = 'goiHS_calledInRound';
 const NOREPEAT_KEY = 'goiHS_noRepeat';
 const TTS_KEY = 'goiHS_tts';
+const AUTH_KEY = 'goiHS_authenticated';
+const VALID_USER = 'Trần Thị Kim Thoa';
+const VALID_PASS = '12345';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(AUTH_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
   const [students, setStudents] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [soundOn, setSoundOn] = useState(true);
@@ -138,6 +153,32 @@ export default function App() {
   const [newClassName, setNewClassName] = useState('');
   const [showNewClassInput, setShowNewClassInput] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const u = loginUser.trim();
+    const p = loginPass.trim();
+    if (u.toLowerCase() === VALID_USER.toLowerCase() && p === VALID_PASS) {
+      setIsAuthenticated(true);
+      setLoginError('');
+      setLoginPass('');
+      try {
+        sessionStorage.setItem(AUTH_KEY, 'true');
+      } catch {}
+    } else {
+      setLoginError('Tên đăng nhập hoặc mật khẩu không chính xác!');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setLoginUser('');
+    setLoginPass('');
+    setLoginError('');
+    try {
+      sessionStorage.removeItem(AUTH_KEY);
+    } catch {}
+  };
 
   useEffect(() => {
     const loadedClasses = getClasses();
@@ -400,6 +441,102 @@ export default function App() {
   const ActiveGameComponent = activeGame?.component;
   const currentThemeInfo = THEMES.find(t => t.id === theme)!;
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen text-brand p-4 flex items-center justify-center relative overflow-hidden">
+        <div className="w-full max-w-md glass p-7 sm:p-8 glow-blue border-accent relative z-10 animate-in fade-in zoom-in-95 duration-300">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="relative mb-4">
+              <img
+                src="/avatar.jpg"
+                alt="Avatar Giáo viên"
+                className="w-24 h-24 rounded-3xl object-cover border-2 border-accent shadow-xl"
+              />
+              <span className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg border-2 border-slate-950">
+                <Lock size={15} />
+              </span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-soft border border-accent-soft text-accent text-[10px] font-black uppercase tracking-widest mb-2">
+              <ShieldCheck size={13} /> Cổng Đăng Nhập Giáo Viên
+            </div>
+
+            <h1 className="text-xl sm:text-2xl font-black text-brand uppercase tracking-wide">
+              🎯 Hệ Thống Gọi Tên 38 Chế Độ
+            </h1>
+            <p className="text-xs text-brand-muted mt-1 font-medium">
+              Trường THPT Hoàng Diệu • Thành phố Cần Thơ
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-brand-muted mb-1.5">
+                Tên đăng nhập
+              </label>
+              <div className="relative">
+                <User size={16} className="w-4 h-4 text-brand-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={loginUser}
+                  onChange={e => {
+                    setLoginUser(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  placeholder="Nhập tên đăng nhập..."
+                  autoComplete="off"
+                  autoFocus
+                  className="w-full bg-surface-code border border-brand-strong rounded-xl pl-10 pr-4 py-3 text-sm text-brand placeholder:text-brand-faint focus-border-accent focus-ring-accent transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-brand-muted mb-1.5">
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <Lock size={16} className="w-4 h-4 text-brand-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={loginPass}
+                  onChange={e => {
+                    setLoginPass(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  placeholder="Nhập mật khẩu..."
+                  autoComplete="new-password"
+                  className="w-full bg-surface-code border border-brand-strong rounded-xl pl-10 pr-11 py-3 text-sm text-brand placeholder:text-brand-faint focus-border-accent focus-ring-accent transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-faint hover:text-brand p-1 transition-colors"
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {loginError && (
+              <div className="p-3 rounded-xl bg-danger-soft border border-danger-soft text-danger text-xs font-semibold text-center animate-in fade-in duration-150">
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-accent-mid hover-bg-accent-soft border border-accent text-accent font-black text-xs uppercase tracking-widest glow-blue flex items-center justify-center gap-2 transition-all active:scale-[0.99] mt-2"
+            >
+              <LogIn size={16} /> Đăng Nhập Hệ Thống
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen text-brand p-4 md:p-6 relative overflow-x-hidden">
       <div className="max-w-7xl mx-auto flex flex-col gap-6 h-full relative z-10">
@@ -542,6 +679,15 @@ export default function App() {
             >
               {isFullscreen ? <Minimize2 size={17} className="text-warn" /> : <Maximize2 size={17} className="text-accent" />}
               <span className="text-[9px] font-bold uppercase whitespace-nowrap">{isFullscreen ? 'Thu nhỏ' : 'Toàn màn'}</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="glass px-2.5 py-2 hover-bg-danger-mid border-danger-soft text-danger transition-all flex flex-col items-center justify-center gap-1 min-w-[58px]"
+              title="Đăng xuất"
+            >
+              <LogOut size={17} />
+              <span className="text-[9px] font-bold uppercase whitespace-nowrap">Thoát</span>
             </button>
           </div>
         </header>
